@@ -1,0 +1,14 @@
+# Node modules
+node_modules/
+
+# Environment file
+.env
+.next/
+# Log files
+*.log
+
+# Build folder
+dist/
+
+# VS Code settings
+.vscode/
