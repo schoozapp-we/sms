@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const searchParams = useSearchParams();
   const [token, setToken] = useState(searchParams.get("token") || "");
   const [password, setPassword] = useState("");
@@ -67,5 +67,24 @@ export default function ResetPasswordPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="authShell">
+          <section className="authRight" style={{ width: "100%" }}>
+            <div className="authCard">
+              <h1>Reset password</h1>
+              <p className="authSub">Loading reset form...</p>
+            </div>
+          </section>
+        </main>
+      }
+    >
+      <ResetPasswordForm />
+    </Suspense>
   );
 }
