@@ -10,17 +10,21 @@ import {
   ClipboardList,
   CircleAlert,
   Coins,
+  ExternalLink,
   FileText,
+  Globe2,
   LayoutDashboard,
   LineChart,
   LogOut,
   Menu,
+  Save,
   Search,
   ShieldCheck,
   Sparkles
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { defaultWebsiteContent, type WebsiteContent } from "../data/schoolSite";
 
 type Role = "admin" | "teacher" | "student" | "parent" | "staff";
 
@@ -33,6 +37,8 @@ type DashboardStat = {
 type RoleDashboardProps = {
   role: Role;
 };
+
+type DashboardTab = "overview" | "analytics" | "calendar" | "approvals" | "website" | "insights" | "notices";
 
 type MeResponse = {
   user: {
@@ -139,6 +145,33 @@ type RoleDashboardApiResponse = {
   adminInsights?: AdminInsights;
 };
 
+type WebsiteContentResponse = {
+  content: WebsiteContent;
+};
+
+const websiteEditorFields: Array<{
+  key: keyof WebsiteContent;
+  label: string;
+  type?: "textarea";
+}> = [
+  { key: "schoolName", label: "School full name" },
+  { key: "shortName", label: "Header short name" },
+  { key: "tagline", label: "Header tagline" },
+  { key: "session", label: "Admission session" },
+  { key: "phone", label: "Phone number" },
+  { key: "email", label: "Email" },
+  { key: "address", label: "Address", type: "textarea" },
+  { key: "heroEyebrow", label: "Home hero small line" },
+  { key: "heroTitle", label: "Home hero title", type: "textarea" },
+  { key: "heroBody", label: "Home hero description", type: "textarea" },
+  { key: "aboutTitle", label: "About section title", type: "textarea" },
+  { key: "aboutBody", label: "About section text", type: "textarea" },
+  { key: "admissionTitle", label: "Admission banner title", type: "textarea" },
+  { key: "admissionBody", label: "Admission banner text", type: "textarea" },
+  { key: "contactTitle", label: "Contact title", type: "textarea" },
+  { key: "contactBody", label: "Contact helper text", type: "textarea" }
+];
+
 const roleAllowedMap: Record<Role, string[]> = {
   admin: ["admin"],
   teacher: ["teacher"],
@@ -217,6 +250,59 @@ function getLineGeometry(series: number[], width: number, height: number) {
   return { line, area };
 }
 
+function WebsiteEditor({
+  draft,
+  status,
+  saving,
+  onChange,
+  onReset,
+  onSave
+}: Readonly<{
+  draft: WebsiteContent;
+  status: string;
+  saving: boolean;
+  onChange: (key: keyof WebsiteContent, value: string) => void;
+  onReset: () => void;
+  onSave: () => void;
+}>) {
+  return (
+    <section className="panel websiteEditorPanel">
+      <div className="panelHeader">
+        <div>
+          <h2>Website Editor</h2>
+          <p className="panelSub">Homepage aur public header/footer ka content yahan se update hoga.</p>
+        </div>
+        <div className="websiteEditorActions">
+          <a href="/" target="_blank" rel="noopener noreferrer" className="miniBtn previewBtn">
+            <ExternalLink size={14} /> Preview
+          </a>
+          <button type="button" className="miniBtn" onClick={onReset}>
+            Reset
+          </button>
+          <button type="button" className="miniBtn approveBtn" onClick={onSave} disabled={saving}>
+            <Save size={14} /> {saving ? "Saving..." : "Save Website"}
+          </button>
+        </div>
+      </div>
+
+      {status && <div className="successBox">{status}</div>}
+
+      <div className="websiteEditorGrid">
+        {websiteEditorFields.map((field) => (
+          <label className={field.type === "textarea" ? "websiteField wide" : "websiteField"} key={field.key}>
+            <span>{field.label}</span>
+            {field.type === "textarea" ? (
+              <textarea value={String(draft[field.key] || "")} onChange={(event) => onChange(field.key, event.target.value)} />
+            ) : (
+              <input value={String(draft[field.key] || "")} onChange={(event) => onChange(field.key, event.target.value)} />
+            )}
+          </label>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default function RoleDashboard({ role }: RoleDashboardProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -227,6 +313,10 @@ export default function RoleDashboard({ role }: RoleDashboardProps) {
   const [selectedDayKey, setSelectedDayKey] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [showQuickActions, setShowQuickActions] = useState(false);
+  const [activeTab, setActiveTab] = useState<DashboardTab>("overview");
+  const [websiteDraft, setWebsiteDraft] = useState<WebsiteContent>(defaultWebsiteContent);
+  const [websiteStatus, setWebsiteStatus] = useState("");
+  const [websiteSaving, setWebsiteSaving] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -258,6 +348,16 @@ export default function RoleDashboard({ role }: RoleDashboardProps) {
           setSelectedDayKey("");
           setLoading(false);
         }
+
+        if (role === "admin") {
+          const websiteResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/website-content`, {
+            credentials: "include"
+          });
+          if (websiteResponse.ok && active) {
+            const websiteData = (await websiteResponse.json()) as WebsiteContentResponse;
+            setWebsiteDraft(websiteData.content);
+          }
+        }
       } catch {
         router.replace(roleLoginMap[role]);
       }
@@ -270,7 +370,21 @@ export default function RoleDashboard({ role }: RoleDashboardProps) {
     };
   }, [role, router]);
 
-  const navItems = role === "admin" ? ["Overview", "Analytics", "Calendar", "Approvals"] : ["Overview", "Insights", "Calendar", "Notices"];
+  const navItems: Array<{ label: string; key: DashboardTab; icon: typeof LayoutDashboard }> =
+    role === "admin"
+      ? [
+          { label: "Overview", key: "overview", icon: LayoutDashboard },
+          { label: "Analytics", key: "analytics", icon: LineChart },
+          { label: "Calendar", key: "calendar", icon: CalendarDays },
+          { label: "Website Editor", key: "website", icon: Globe2 },
+          { label: "Approvals", key: "approvals", icon: ClipboardList }
+        ]
+      : [
+          { label: "Overview", key: "overview", icon: LayoutDashboard },
+          { label: "Insights", key: "insights", icon: LineChart },
+          { label: "Calendar", key: "calendar", icon: CalendarDays },
+          { label: "Notices", key: "notices", icon: Bell }
+        ];
 
   const onLogout = async () => {
     await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
@@ -319,6 +433,35 @@ export default function RoleDashboard({ role }: RoleDashboardProps) {
       });
     } finally {
       setActionLoading("");
+    }
+  };
+
+  const onWebsiteDraftChange = (key: keyof WebsiteContent, value: string) => {
+    setWebsiteDraft((prev) => ({ ...prev, [key]: value }));
+    setWebsiteStatus("");
+  };
+
+  const onWebsiteSave = async () => {
+    setWebsiteSaving(true);
+    setWebsiteStatus("");
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/website-content`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(websiteDraft)
+      });
+      const data = (await response.json()) as Partial<WebsiteContentResponse> & { message?: string };
+      if (!response.ok || !data.content) {
+        setWebsiteStatus(data.message || "Website update failed.");
+        return;
+      }
+      setWebsiteDraft(data.content);
+      setWebsiteStatus("Website content saved. Public website ab updated content dikhayegi.");
+    } catch {
+      setWebsiteStatus("Server se connect nahi ho pa raha.");
+    } finally {
+      setWebsiteSaving(false);
     }
   };
 
@@ -452,12 +595,20 @@ export default function RoleDashboard({ role }: RoleDashboardProps) {
         </div>
 
         <nav>
-          {navItems.map((item, index) => (
-            <button key={item} className={index === 0 ? "active" : ""}>
-              <LayoutDashboard size={18} />
-              <span>{item}</span>
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+            <button
+              key={item.key}
+              className={activeTab === item.key ? "active" : ""}
+              onClick={() => setActiveTab(item.key)}
+              type="button"
+            >
+              <Icon size={18} />
+              <span>{item.label}</span>
             </button>
-          ))}
+            );
+          })}
           <button onClick={onLogout}>
             <LogOut size={18} />
             <span>Logout</span>
@@ -467,7 +618,7 @@ export default function RoleDashboard({ role }: RoleDashboardProps) {
 
       <section className="workspace workspaceDense">
         <header className="topbar">
-          <button className="iconOnly" aria-label="Open menu">
+          <button className="iconOnly" aria-label="Open menu" onClick={() => setShowQuickActions((prev) => !prev)}>
             <Menu size={20} />
           </button>
           <div className="search">
@@ -478,7 +629,7 @@ export default function RoleDashboard({ role }: RoleDashboardProps) {
               onChange={(event) => setSearchTerm(event.target.value)}
             />
           </div>
-          <button className="iconOnly" aria-label="Notifications">
+          <button className="iconOnly" aria-label="Notifications" onClick={() => setActiveTab("notices")}>
             <Bell size={20} />
           </button>
         </header>
@@ -498,13 +649,13 @@ export default function RoleDashboard({ role }: RoleDashboardProps) {
         {showQuickActions && (
           <section className="quickActionPanel" aria-label="Quick actions">
             {[
-              { label: role === "admin" ? "Review approvals" : "Open today view", icon: ClipboardList },
-              { label: "Check notices", icon: Bell },
-              { label: "Export snapshot", icon: FileText }
+              { label: role === "admin" ? "Review approvals" : "Open today view", icon: ClipboardList, tab: role === "admin" ? "approvals" : "calendar" },
+              { label: "Check notices", icon: Bell, tab: "notices" },
+              { label: role === "admin" ? "Edit website" : "Open insights", icon: role === "admin" ? Globe2 : FileText, tab: role === "admin" ? "website" : "insights" }
             ].map((action) => {
               const Icon = action.icon;
               return (
-                <button type="button" key={action.label}>
+                <button type="button" key={action.label} onClick={() => setActiveTab(action.tab as DashboardTab)}>
                   <Icon size={16} />
                   <span>{action.label}</span>
                 </button>
@@ -525,7 +676,21 @@ export default function RoleDashboard({ role }: RoleDashboardProps) {
           ))}
         </section>
 
-        {role === "admin" && adminInsights && (
+        {role === "admin" && activeTab === "website" && (
+          <WebsiteEditor
+            draft={websiteDraft}
+            status={websiteStatus}
+            saving={websiteSaving}
+            onChange={onWebsiteDraftChange}
+            onReset={() => {
+              setWebsiteDraft(defaultWebsiteContent);
+              setWebsiteStatus("Default content loaded. Save karne par website par apply hoga.");
+            }}
+            onSave={onWebsiteSave}
+          />
+        )}
+
+        {role === "admin" && adminInsights && (activeTab === "overview" || activeTab === "analytics") && (
           <>
             <section className="adminInsightsGrid">
               <article className="panel adminChartPanel">
@@ -605,7 +770,7 @@ export default function RoleDashboard({ role }: RoleDashboardProps) {
               </article>
             </section>
 
-            <section className="split adminOpsSplit">
+            {activeTab === "overview" && <section className="split adminOpsSplit">
               <section className="panel adminCalendarPanel">
                 <div className="panelHeader calendarHeader">
                   <h2>Operations Calendar</h2>
@@ -740,7 +905,7 @@ export default function RoleDashboard({ role }: RoleDashboardProps) {
                   )}
                 </div>
               </section>
-            </section>
+            </section>}
 
             <section className="panel" style={{ marginTop: 18 }}>
               <div className="panelHeader">
@@ -764,6 +929,64 @@ export default function RoleDashboard({ role }: RoleDashboardProps) {
           </>
         )}
 
+        {role === "admin" && adminInsights && activeTab === "calendar" && (
+          <section className="panel adminCalendarPanel" style={{ marginTop: 18 }}>
+            <div className="panelHeader calendarHeader">
+              <h2>Operations Calendar</h2>
+              <div className="calendarNav">
+                <button className="miniIconBtn" type="button" onClick={() => changeCalendarMonth(-1)} aria-label="Previous month">
+                  <ArrowLeft size={14} />
+                </button>
+                <strong>{calendarData?.monthLabel}</strong>
+                <button className="miniIconBtn" type="button" onClick={() => changeCalendarMonth(1)} aria-label="Next month">
+                  <ArrowRight size={14} />
+                </button>
+              </div>
+            </div>
+
+            <div className="weekdayGrid">
+              {calendarData?.weekdays.map((weekday) => (
+                <span key={weekday}>{weekday}</span>
+              ))}
+            </div>
+
+            <div className="calendarGrid">
+              {calendarData?.cells.map((cell) => {
+                const classNames = ["calendarDay"];
+                if (!cell.isCurrentMonth) classNames.push("dayMuted");
+                if (cell.isToday) classNames.push("dayToday");
+                if (selectedDayKey === cell.key) classNames.push("daySelected");
+                if (cell.events.length > 0) classNames.push("dayHasEvents");
+
+                return (
+                  <button key={cell.key} type="button" className={classNames.join(" ")} onClick={() => setSelectedDayKey(cell.key)}>
+                    <span>{cell.day}</span>
+                    {cell.events.length > 0 && <i className="eventDot">{cell.events.length}</i>}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="calendarEventList">
+              <h4>Schedule: {selectedDayKey ? formatDayKey(selectedDayKey) : "Selected Day"}</h4>
+              {selectedDayEvents.length ? (
+                selectedDayEvents.map((event) => (
+                  <article className="calendarEventItem" key={event.id}>
+                    <span className={`eventPill event-${event.type}`}>{event.type.toUpperCase()}</span>
+                    <div>
+                      <strong>{event.title}</strong>
+                      <small>{event.meta}</small>
+                    </div>
+                  </article>
+                ))
+              ) : (
+                <p className="emptyHint">No planned event for this date.</p>
+              )}
+            </div>
+          </section>
+        )}
+
+        {(activeTab === "overview" || activeTab === "insights") && (
         <section className="split" style={{ marginTop: role === "admin" ? 18 : 0 }}>
           <section className="panel">
             <div className="panelHeader">
@@ -795,8 +1018,9 @@ export default function RoleDashboard({ role }: RoleDashboardProps) {
             </div>
           </section>
         </section>
+        )}
 
-        <section className="panel" style={{ marginTop: 18 }}>
+        {(activeTab === "overview" || activeTab === "notices") && <section className="panel" style={{ marginTop: 18 }}>
           <div className="panelHeader">
             <h2>Recent Notices</h2>
           </div>
@@ -813,9 +1037,9 @@ export default function RoleDashboard({ role }: RoleDashboardProps) {
             ))}
             {!filteredNotices.length && <p className="emptyHint">No notices match your search.</p>}
           </div>
-        </section>
+        </section>}
 
-        {role === "admin" && (
+        {role === "admin" && (activeTab === "overview" || activeTab === "approvals") && (
           <section className="panel" style={{ marginTop: 18 }}>
             <div className="panelHeader">
               <h2>Pending Signup Requests</h2>

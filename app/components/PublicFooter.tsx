@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { Bell, BriefcaseBusiness, FileText } from "lucide-react";
-import { schoolProfile } from "../data/schoolSite";
+import { getWebsiteContent } from "@/lib/server/websiteContent";
 
-export function PublicFooter() {
+export async function PublicFooter() {
+  const content = await getWebsiteContent();
+
   return (
     <footer className="portalFooter">
       <div>
-        <strong>{schoolProfile.name}</strong>
+        <strong>{content.schoolName}</strong>
         <span>Home | About | Academics | Admission | Facilities | Gallery | Contact</span>
       </div>
       <div className="portalFooterActions">

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChevronDown, Phone, Shield } from "lucide-react";
-import { portals, schoolProfile } from "../data/schoolSite";
+import { portals } from "../data/schoolSite";
+import { getWebsiteContent } from "@/lib/server/websiteContent";
 
 const navItems = [
   { label: "Home", href: "/" },
@@ -12,7 +13,10 @@ const navItems = [
   { label: "Contact", href: "/contact" }
 ];
 
-export function PublicHeader() {
+export async function PublicHeader() {
+  const content = await getWebsiteContent();
+  const phoneHref = `tel:${content.phone.replace(/[^\d+]/g, "")}`;
+
   return (
     <header className="portalSiteHeader">
       <Link href="/" className="portalBrand" aria-label="Bright Future School home">
@@ -20,8 +24,8 @@ export function PublicHeader() {
           <Shield size={20} />
         </span>
         <div>
-            <strong>{schoolProfile.shortName}</strong>
-            <small>{schoolProfile.tagline}</small>
+            <strong>{content.shortName}</strong>
+            <small>{content.tagline}</small>
         </div>
       </Link>
 
@@ -34,8 +38,8 @@ export function PublicHeader() {
       </nav>
 
       <div className="portalHeaderActions">
-        <a href={schoolProfile.phoneHref} className="portalCallLink">
-          <Phone size={15} /> {schoolProfile.phone}
+        <a href={phoneHref} className="portalCallLink">
+          <Phone size={15} /> {content.phone}
         </a>
         <details className="portalMenu">
           <summary>

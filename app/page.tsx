@@ -34,14 +34,19 @@ import {
   quickLinks,
   schoolProfile
 } from "./data/schoolSite";
+import { getWebsiteContent } from "@/lib/server/websiteContent";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const content = await getWebsiteContent();
+  const phoneHref = `tel:${content.phone.replace(/[^\d+]/g, "")}`;
+  const whatsappHref = `https://wa.me/${content.phone.replace(/\D/g, "")}`;
+
   return (
     <PublicPageShell>
       <PublicHero
-        eyebrow={`Admissions Open ${schoolProfile.session}`}
-        title={schoolProfile.name}
-        body="A complete modern school website with secure portals for admissions, academics, notices, fees, results, downloads and parent communication."
+        eyebrow={content.heroEyebrow}
+        title={content.heroTitle}
+        body={content.heroBody}
       />
 
       <section className="siteSearchBand" aria-label="Search and quick actions">
@@ -49,10 +54,10 @@ export default function HomePage() {
           <Search size={18} />
           <span>Search admissions, circulars, downloads, teachers and events</span>
         </div>
-        <a href={schoolProfile.whatsappHref} className="whatsappLink">
+        <a href={whatsappHref} className="whatsappLink">
           <MessageCircle size={17} /> WhatsApp Chat
         </a>
-        <a href={schoolProfile.phoneHref} className="callLink">
+        <a href={phoneHref} className="callLink">
           <Phone size={17} /> Click to Call
         </a>
       </section>
@@ -62,11 +67,8 @@ export default function HomePage() {
       <section className="sectionGrid aboutGrid">
         <article className="sectionIntro">
           <p>About Us</p>
-          <h2>School history, vision, mission and overview in one place.</h2>
-          <span>
-            Established in 2004, the school focuses on discipline, practical learning,
-            strong academics and technology-enabled communication between school and home.
-          </span>
+          <h2>{content.aboutTitle}</h2>
+          <span>{content.aboutBody}</span>
           <Link href="/about" className="inlineDetailLink">Read Full About Page</Link>
         </article>
         <div className="infoPanel">
@@ -81,8 +83,8 @@ export default function HomePage() {
       <section className="admissionBanner">
         <div>
           <p>Admission Open</p>
-          <h2>Online admission enquiry and prospectus download are ready.</h2>
-          <span>Process, eligibility, required documents, fee structure and online form can be managed from the admission page.</span>
+          <h2>{content.admissionTitle}</h2>
+          <span>{content.admissionBody}</span>
         </div>
         <div className="bannerActions">
           <Link href="/admission" className="heroPrimaryLink">Admission Details</Link>
@@ -159,9 +161,9 @@ export default function HomePage() {
           <p>Contact Us</p>
           <h2>Visit or contact the school office.</h2>
           <div className="contactRows">
-            <span><MapPin size={16} /> {schoolProfile.address}</span>
-            <span><Phone size={16} /> {schoolProfile.phone}</span>
-            <span><Mail size={16} /> {schoolProfile.email}</span>
+            <span><MapPin size={16} /> {content.address}</span>
+            <span><Phone size={16} /> {content.phone}</span>
+            <span><Mail size={16} /> {content.email}</span>
           </div>
         </div>
         <form className="contactForm">

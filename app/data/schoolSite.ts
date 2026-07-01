@@ -10,6 +10,48 @@ export const schoolProfile = {
   session: "2026-27"
 };
 
+export type WebsiteContent = {
+  schoolName: string;
+  shortName: string;
+  tagline: string;
+  session: string;
+  phone: string;
+  email: string;
+  address: string;
+  heroEyebrow: string;
+  heroTitle: string;
+  heroBody: string;
+  aboutTitle: string;
+  aboutBody: string;
+  admissionTitle: string;
+  admissionBody: string;
+  contactTitle: string;
+  contactBody: string;
+  updatedAt?: string;
+};
+
+export const defaultWebsiteContent: WebsiteContent = {
+  schoolName: schoolProfile.name,
+  shortName: schoolProfile.shortName,
+  tagline: schoolProfile.tagline,
+  session: schoolProfile.session,
+  phone: schoolProfile.phone,
+  email: schoolProfile.email,
+  address: schoolProfile.address,
+  heroEyebrow: `Admissions Open ${schoolProfile.session}`,
+  heroTitle: schoolProfile.name,
+  heroBody:
+    "A complete modern school website with secure portals for admissions, academics, notices, fees, results, downloads and parent communication.",
+  aboutTitle: "School history, vision, mission and overview in one place.",
+  aboutBody:
+    "Established in 2004, the school focuses on discipline, practical learning, strong academics and technology-enabled communication between school and home.",
+  admissionTitle: "Online admission enquiry and prospectus download are ready.",
+  admissionBody:
+    "Process, eligibility, required documents, fee structure and online form can be managed from the admission page.",
+  contactTitle: "Visit or contact the school office.",
+  contactBody: "Admission, transport, fee, documents ya portal access ke liye office team available hai."
+};
+
 export const highlights = [
   { label: "Students", value: "1200+" },
   { label: "Board", value: "CBSE" },

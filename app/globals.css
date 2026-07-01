@@ -1602,6 +1602,80 @@ nav button:hover {
   font-size: 13px;
 }
 
+.panelSub {
+  margin: 4px 0 0;
+  color: #667085;
+  font-size: 13px;
+}
+
+.websiteEditorPanel {
+  margin-top: 18px;
+}
+
+.websiteEditorActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.websiteEditorActions .miniBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  text-decoration: none;
+}
+
+.previewBtn {
+  color: #123d67;
+  background: #e9f2f9;
+}
+
+.websiteEditorGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.websiteField {
+  display: grid;
+  gap: 6px;
+}
+
+.websiteField.wide {
+  grid-column: span 2;
+}
+
+.websiteField span {
+  color: #51637a;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.websiteField input,
+.websiteField textarea {
+  width: 100%;
+  border: 1px solid #d7e4ef;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #10263f;
+  background: #f8fbff;
+  outline: 0;
+}
+
+.websiteField textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.websiteField input:focus,
+.websiteField textarea:focus {
+  border-color: #123d67;
+  background: #ffffff;
+}
+
 @media (max-width: 1300px) {
   .adminInsightsGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1629,6 +1703,12 @@ nav button:hover {
 
   .strengthRow {
     grid-template-columns: 1fr;
+  }
+
+  .websiteEditorGrid,
+  .websiteField.wide {
+    grid-template-columns: 1fr;
+    grid-column: auto;
   }
 }
 
