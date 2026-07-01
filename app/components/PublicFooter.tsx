@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { Bell, BriefcaseBusiness, FileText } from "lucide-react";
+import { schoolProfile } from "../data/schoolSite";
 
 export function PublicFooter() {
   return (
     <footer className="portalFooter">
       <div>
-        <strong>Bright Future Senior Secondary School</strong>
+        <strong>{schoolProfile.name}</strong>
         <span>Home | About | Academics | Admission | Facilities | Gallery | Contact</span>
       </div>
       <div className="portalFooterActions">

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ChevronDown, Phone, Shield } from "lucide-react";
+import { portals, schoolProfile } from "../data/schoolSite";
 
 const navItems = [
   { label: "Home", href: "/" },
@@ -11,14 +12,6 @@ const navItems = [
   { label: "Contact", href: "/contact" }
 ];
 
-const portals = [
-  { label: "Student Portal", href: "/student/login" },
-  { label: "Parent Portal", href: "/parent/login" },
-  { label: "Teacher Portal", href: "/teacher/login" },
-  { label: "Staff Portal", href: "/staff/login" },
-  { label: "Admin Portal", href: "/admin/login" }
-];
-
 export function PublicHeader() {
   return (
     <header className="portalSiteHeader">
@@ -27,8 +20,8 @@ export function PublicHeader() {
           <Shield size={20} />
         </span>
         <div>
-          <strong>Bright Future School</strong>
-          <small>Senior Secondary Campus</small>
+            <strong>{schoolProfile.shortName}</strong>
+            <small>{schoolProfile.tagline}</small>
         </div>
       </Link>
 
@@ -41,12 +34,12 @@ export function PublicHeader() {
       </nav>
 
       <div className="portalHeaderActions">
-        <a href="tel:+911234567890" className="portalCallLink">
-          <Phone size={15} /> +91 12345 67890
+        <a href={schoolProfile.phoneHref} className="portalCallLink">
+          <Phone size={15} /> {schoolProfile.phone}
         </a>
         <details className="portalMenu">
           <summary>
-            Portal Login <ChevronDown size={14} />
+            <Link href="/portal-login">Portal Login</Link> <ChevronDown size={14} />
           </summary>
           <div className="portalMenuList">
             {portals.map((portal) => (
