@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, KeyRound, ShieldCheck } from "lucide-react";
 
 type Portal = "admin" | "teacher" | "student" | "parent" | "user" | "staff";
@@ -15,6 +15,15 @@ const roleToDashboard: Record<string, string> = {
   staff: "/dashboard/staff",
   accountant: "/dashboard/staff",
   reception: "/dashboard/staff"
+};
+
+const portalAllowedRoles: Record<Portal, string[]> = {
+  admin: ["admin"],
+  teacher: ["teacher"],
+  student: ["student"],
+  parent: ["parent"],
+  user: ["parent"],
+  staff: ["staff", "accountant", "reception"]
 };
 
 type PortalLoginFormProps = {
@@ -30,6 +39,31 @@ export default function PortalLoginForm({ portal, title, subtitle, signupHref }:
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const clearWrongPortalSession = async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
+          credentials: "include"
+        });
+        if (!response.ok) return;
+
+        const data = await response.json();
+        const currentRole = data.user?.role;
+        if (currentRole && !portalAllowedRoles[portal].includes(currentRole)) {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
+            method: "POST",
+            credentials: "include"
+          });
+          localStorage.removeItem("user");
+        }
+      } catch {
+        localStorage.removeItem("user");
+      }
+    };
+
+    clearWrongPortalSession();
+  }, [portal]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
