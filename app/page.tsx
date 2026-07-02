@@ -31,8 +31,7 @@ import {
   galleryPreview,
   modernFeatures,
   newsItems,
-  quickLinks,
-  schoolProfile
+  quickLinks
 } from "./data/schoolSite";
 import { getWebsiteContent } from "@/lib/server/websiteContent";
 

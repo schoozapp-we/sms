@@ -2,17 +2,21 @@ import { defaultWebsiteContent, type WebsiteContent as WebsiteContentData } from
 import { connectDb } from "./db";
 import { WebsiteContent } from "./models/WebsiteContent";
 
+type EditableWebsiteContentKey = Exclude<keyof WebsiteContentData, "updatedAt">;
+
 const editableKeys = Object.keys(defaultWebsiteContent).filter((key) => key !== "updatedAt") as Array<
-  keyof WebsiteContentData
+  EditableWebsiteContentKey
 >;
 
 export function normalizeWebsiteContent(input: Partial<WebsiteContentData>) {
-  return editableKeys.reduce((acc, key) => {
-    const fallback = defaultWebsiteContent[key];
+  const normalized: WebsiteContentData = { ...defaultWebsiteContent };
+  editableKeys.forEach((key) => {
     const value = input[key];
-    acc[key] = typeof value === "string" && value.trim() ? value.trim() : fallback;
-    return acc;
-  }, {} as WebsiteContentData);
+    if (typeof value === "string" && value.trim()) {
+      normalized[key] = value.trim();
+    }
+  });
+  return normalized;
 }
 
 export async function getWebsiteContent(): Promise<WebsiteContentData> {
