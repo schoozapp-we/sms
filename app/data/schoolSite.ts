@@ -27,8 +27,120 @@ export type WebsiteContent = {
   admissionBody: string;
   contactTitle: string;
   contactBody: string;
+  downloadDocuments: WebsiteDownloadDocument[];
   updatedAt?: string;
 };
+
+export type WebsiteDownloadDocument = {
+  slug: string;
+  title: string;
+  filename: string;
+  body: string;
+};
+
+export const defaultDownloadDocuments: WebsiteDownloadDocument[] = [
+  {
+    slug: "admission-form",
+    title: "Admission Form",
+    filename: "admission-form.pdf",
+    body: [
+      "Student Name: ______________________________",
+      "Class Applying For: __________ Section: ______",
+      "Date of Birth: __________ Gender: __________",
+      "Guardian Name: _____________________________",
+      "Guardian Phone: ____________________________",
+      "Address: __________________________________",
+      "Documents: Birth certificate, Aadhaar, report card, photos"
+    ].join("\n")
+  },
+  {
+    slug: "tc-form",
+    title: "TC Form",
+    filename: "tc-form.pdf",
+    body: [
+      "Student Name: ______________________________",
+      "Admission No: ______________________________",
+      "Class/Section: _____________________________",
+      "Reason for TC: _____________________________",
+      "Fee Clearance: _____________________________",
+      "Guardian Signature: ________________________"
+    ].join("\n")
+  },
+  {
+    slug: "syllabus",
+    title: "Syllabus",
+    filename: "syllabus.pdf",
+    body: [
+      "English: Reading, writing, grammar and literature.",
+      "Mathematics: Number system, algebra, geometry and data handling.",
+      "Science: Physics, Chemistry, Biology concepts and practical work.",
+      "Social Science: History, Civics, Geography and Economics.",
+      "Computer: Digital literacy, coding basics and projects."
+    ].join("\n")
+  },
+  {
+    slug: "holiday-list",
+    title: "Holiday List",
+    filename: "holiday-list.pdf",
+    body: [
+      "Independence Day - 15 Aug 2026",
+      "Raksha Bandhan - As per school circular",
+      "Gandhi Jayanti - 02 Oct 2026",
+      "Diwali Break - As per academic calendar",
+      "Winter Break - As per academic calendar",
+      "Republic Day - 26 Jan 2027"
+    ].join("\n")
+  },
+  {
+    slug: "time-table",
+    title: "Time Table",
+    filename: "time-table.pdf",
+    body: [
+      "08:00 - 08:20 Assembly",
+      "08:20 - 09:00 Period 1",
+      "09:00 - 09:40 Period 2",
+      "09:40 - 10:20 Period 3",
+      "10:20 - 10:40 Break",
+      "10:40 - 13:40 Academic periods and activities"
+    ].join("\n")
+  },
+  {
+    slug: "homework-pdf",
+    title: "Homework PDF",
+    filename: "homework-guidelines.pdf",
+    body: [
+      "Check student portal daily for teacher-assigned homework.",
+      "Submit homework before due date.",
+      "Attach PDF/video/link where teacher requests online submission.",
+      "Late submissions may require teacher approval.",
+      "Use neat handwriting and mention name, class and roll number."
+    ].join("\n")
+  },
+  {
+    slug: "prospectus",
+    title: "Prospectus",
+    filename: "school-prospectus.pdf",
+    body: [
+      "Modern classrooms, laboratories, library and sports facilities.",
+      "Secure student, teacher, staff and admin portals.",
+      "Online admission application and reception verification workflow.",
+      "Attendance, homework, exam, fee and notice modules.",
+      "Contact office for class-wise eligibility and fee details."
+    ].join("\n")
+  },
+  {
+    slug: "fee-structure",
+    title: "Fee Structure",
+    filename: "fee-structure.pdf",
+    body: [
+      "Admission Fee: Contact office for current session.",
+      "Monthly Tuition Fee: Class-wise as approved by school management.",
+      "Transport Fee: Route-wise applicable.",
+      "Exam/Activity Fee: As per school circular.",
+      "Payment: School fee counter or authorized online methods."
+    ].join("\n")
+  }
+];
 
 export const defaultWebsiteContent: WebsiteContent = {
   schoolName: schoolProfile.name,
@@ -41,7 +153,7 @@ export const defaultWebsiteContent: WebsiteContent = {
   heroEyebrow: `Admissions Open ${schoolProfile.session}`,
   heroTitle: schoolProfile.name,
   heroBody:
-    "A complete modern school website with secure portals for admissions, academics, notices, fees, results, downloads and parent communication.",
+    "A complete modern school website with secure portals for admissions, academics, notices, fees, results, downloads and student communication.",
   aboutTitle: "School history, vision, mission and overview in one place.",
   aboutBody:
     "Established in 2004, the school focuses on discipline, practical learning, strong academics and technology-enabled communication between school and home.",
@@ -49,7 +161,8 @@ export const defaultWebsiteContent: WebsiteContent = {
   admissionBody:
     "Process, eligibility, required documents, fee structure and online form can be managed from the admission page.",
   contactTitle: "Visit or contact the school office.",
-  contactBody: "Admission, transport, fee, documents ya portal access ke liye office team available hai."
+  contactBody: "Admission, transport, fee, documents ya portal access ke liye office team available hai.",
+  downloadDocuments: defaultDownloadDocuments
 };
 
 export const highlights = [
@@ -65,12 +178,6 @@ export const portals = [
     href: "/student/login",
     signupHref: "/signup?role=student",
     body: "Attendance, homework, results, report card and notices."
-  },
-  {
-    label: "Parent Portal",
-    href: "/parent/login",
-    signupHref: "/signup?role=parent",
-    body: "Child progress, fee updates, notices and report cards."
   },
   {
     label: "Teacher Portal",
@@ -189,14 +296,7 @@ export const admissionSteps = [
   "Confirm admission after document verification and fee payment."
 ];
 
-export const downloads = [
-  "Admission Form",
-  "TC Form",
-  "Syllabus",
-  "Holiday List",
-  "Time Table",
-  "Homework PDF"
-];
+export const downloads = defaultDownloadDocuments.slice(0, 6).map((document) => document.title);
 
 export const achievements = [
   "Board result toppers",

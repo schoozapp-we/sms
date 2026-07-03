@@ -10,7 +10,7 @@ export default function PortalLoginPage() {
       <PageHero
         eyebrow="Portal Login"
         title="Choose your secure school login portal."
-        body="Students, parents, teachers, staff and admin users can open their correct role-wise login page from here."
+        body="Students, teachers, staff and admin users can open their correct role-wise login page from here."
       />
 
       <section className="siteSection">
@@ -36,7 +36,7 @@ export default function PortalLoginPage() {
 
       <section className="homeFooterStrip">
         <Link href="/student/login"><ShieldCheck size={15} /> Student</Link>
-        <Link href="/parent/login"><ShieldCheck size={15} /> Parent</Link>
+        <Link href="/teacher/login"><ShieldCheck size={15} /> Teacher</Link>
         <Link href="/admin/login"><ArrowRight size={15} /> Admin</Link>
       </section>
     </PublicPageShell>

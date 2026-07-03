@@ -13,6 +13,11 @@ const staffSchema = z.object({
   subjects: z.array(z.string()).default([]),
   phone: z.string().optional(),
   email: z.string().email().optional(),
+  profileImageUrl: z.string().optional(),
+  qualification: z.string().optional(),
+  experience: z.string().optional(),
+  bio: z.string().optional(),
+  showOnWebsite: z.boolean().optional(),
   joinedAt: z.coerce.date().optional()
 });
 

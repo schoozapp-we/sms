@@ -4,23 +4,22 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { ShieldCheck, BookOpen, UserRound, BriefcaseBusiness, Check, Shield } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import AppLoader from "../components/AppLoader";
 
-type Role = "admin" | "teacher" | "staff" | "student" | "parent";
+type Role = "admin" | "teacher" | "staff" | "student";
 
 const roles: { key: Role; label: string; icon: React.ReactNode }[] = [
   { key: "admin", label: "Admin", icon: <Shield size={16} /> },
   { key: "teacher", label: "Teacher", icon: <BookOpen size={16} /> },
   { key: "staff", label: "Staff", icon: <BriefcaseBusiness size={16} /> },
-  { key: "student", label: "Student", icon: <UserRound size={16} /> },
-  { key: "parent", label: "Parent/User", icon: <ShieldCheck size={16} /> }
+  { key: "student", label: "Student", icon: <UserRound size={16} /> }
 ];
 
 const roleToLogin: Record<Role, string> = {
   admin: "/admin/login",
   teacher: "/teacher/login",
   staff: "/staff/login",
-  student: "/student/login",
-  parent: "/parent/login"
+  student: "/student/login"
 };
 
 function SignupForm() {
@@ -33,8 +32,7 @@ function SignupForm() {
       roleFromQuery === "admin" ||
       roleFromQuery === "teacher" ||
       roleFromQuery === "staff" ||
-      roleFromQuery === "student" ||
-      roleFromQuery === "parent"
+      roleFromQuery === "student"
     ) {
       return roleFromQuery;
     }
@@ -247,13 +245,8 @@ export default function SignupPage() {
   return (
     <Suspense
       fallback={
-        <main className="authShell">
-          <section className="authRight" style={{ width: "100%" }}>
-            <div className="authCard">
-              <h1>Create request</h1>
-              <p className="authSub">Loading signup form...</p>
-            </div>
-          </section>
+        <main className="loaderPage">
+          <AppLoader title="Create request" message="Loading signup form..." compact />
         </main>
       }
     >

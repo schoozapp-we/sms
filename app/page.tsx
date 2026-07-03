@@ -14,6 +14,8 @@ import {
   Search
 } from "lucide-react";
 import { PublicPageShell } from "./components/PublicPageShell";
+import { ContactEnquiryForm } from "./components/ContactEnquiryForm";
+import { TeacherCarousel } from "./components/TeacherCarousel";
 import {
   CheckList,
   DownloadGrid,
@@ -27,16 +29,17 @@ import {
 import {
   academicFeatures,
   achievements,
-  downloads,
   galleryPreview,
   modernFeatures,
   newsItems,
   quickLinks
 } from "./data/schoolSite";
 import { getWebsiteContent } from "@/lib/server/websiteContent";
+import { getPublicGallery, getPublicTeachers } from "@/lib/server/publicMedia";
 
 export default async function HomePage() {
   const content = await getWebsiteContent();
+  const [publicGallery, publicTeachers] = await Promise.all([getPublicGallery(), getPublicTeachers()]);
   const phoneHref = `tel:${content.phone.replace(/[^\d+]/g, "")}`;
   const whatsappHref = `https://wa.me/${content.phone.replace(/\D/g, "")}`;
 
@@ -87,7 +90,7 @@ export default async function HomePage() {
         </div>
         <div className="bannerActions">
           <Link href="/admission" className="heroPrimaryLink">Admission Details</Link>
-          <Link href="/signup" className="heroSecondaryLink">Apply Online</Link>
+          <Link href="/admission#admission-form" className="heroSecondaryLink">Apply Online</Link>
         </div>
       </section>
 
@@ -125,20 +128,25 @@ export default async function HomePage() {
       <section className="siteSection">
         <SectionHeading eyebrow="Gallery" title="Photo and video gallery preview." />
         <div className="galleryGrid">
-          {galleryPreview.slice(0, 4).map((item, index) => (
-            <article key={item}>
-              <Image src="/images/school-portal-hero.png" alt={`${item} gallery preview`} fill sizes="(max-width: 800px) 100vw, 25vw" style={{ objectPosition: `${45 + index * 6}% center` }} />
-              <div><PlayCircle size={18} /><strong>{item}</strong></div>
+          {(publicGallery.length ? publicGallery.slice(0, 4) : galleryPreview.slice(0, 4).map((title, index) => ({ id: title, title, imageUrl: "/images/school-portal-hero.png", description: String(index) }))).map((item, index) => (
+            <article key={item.id}>
+              <Image src={item.imageUrl} alt={`${item.title} gallery preview`} fill sizes="(max-width: 800px) 100vw, 25vw" style={{ objectPosition: `${45 + index * 6}% center` }} />
+              <div><PlayCircle size={18} /><strong>{item.title}</strong></div>
             </article>
           ))}
         </div>
         <Link href="/gallery" className="inlineDetailLink">Open Full Gallery</Link>
       </section>
 
+      <section className="siteSection">
+        <SectionHeading eyebrow="Teachers" title="Meet our faculty team." />
+        <TeacherCarousel teachers={publicTeachers} />
+      </section>
+
       <section className="contentSplit">
         <div className="downloadPanel">
           <SectionHeading eyebrow="Downloads" title="Forms, syllabus, holiday list, timetable and PDFs." />
-          <DownloadGrid items={downloads} />
+          <DownloadGrid items={content.downloadDocuments} />
         </div>
         <QuickLinkList items={quickLinks} />
       </section>
@@ -165,17 +173,17 @@ export default async function HomePage() {
             <span><Mail size={16} /> {content.email}</span>
           </div>
         </div>
-        <form className="contactForm">
-          <input aria-label="Name" placeholder="Your name" />
-          <input aria-label="Phone" placeholder="Phone number" />
-          <input aria-label="Message" placeholder="Message" />
-          <button type="button">Send Enquiry</button>
-        </form>
-        <div className="mapBox">
+        <ContactEnquiryForm compact defaultTopic="Website enquiry" />
+        <a
+          className="mapBox"
+          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(content.address)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           <MapPin size={24} />
-          <strong>Google Map</strong>
-          <span>Embed school location here</span>
-        </div>
+          <strong>Open Google Map</strong>
+          <span>{content.address}</span>
+        </a>
       </section>
 
       <section className="homeFooterStrip">

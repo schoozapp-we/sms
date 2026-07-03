@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
+import AppLoader from "../components/AppLoader";
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
@@ -74,13 +75,8 @@ export default function ResetPasswordPage() {
   return (
     <Suspense
       fallback={
-        <main className="authShell">
-          <section className="authRight" style={{ width: "100%" }}>
-            <div className="authCard">
-              <h1>Reset password</h1>
-              <p className="authSub">Loading reset form...</p>
-            </div>
-          </section>
+        <main className="loaderPage">
+          <AppLoader title="Reset password" message="Loading reset form..." compact />
         </main>
       }
     >

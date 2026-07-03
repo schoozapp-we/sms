@@ -3,7 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDb } from "@/lib/server/db";
 import { requireAuth } from "@/lib/server/auth";
 import { Attendance, ClassRoom, Exam } from "@/lib/server/models/Academic";
+import { AdmissionApplication } from "@/lib/server/models/AdmissionApplication";
 import { Fee } from "@/lib/server/models/Finance";
+import { Homework } from "@/lib/server/models/Homework";
+import { MediaAsset } from "@/lib/server/models/MediaAsset";
 import { Notice } from "@/lib/server/models/Notice";
 import { Staff } from "@/lib/server/models/Staff";
 import { Student } from "@/lib/server/models/Student";
@@ -108,12 +111,23 @@ export async function GET(request: NextRequest) {
         });
       }
 
-      const [fees, attendanceDocs, exams] = await Promise.all([
+      const [fees, attendanceDocs, exams, homeworkDocs, mediaDocs] = await Promise.all([
         Fee.find({ student: student._id }).sort({ dueDate: -1 }).lean(),
         Attendance.find({ "records.student": student._id }).select("date records").sort({ date: -1 }).lean(),
         Exam.find({ className: student.className, section: { $in: [student.section, null, ""] } })
           .sort({ examDate: 1 })
           .limit(10)
+          .lean(),
+        Homework.find({ className: student.className, section: student.section })
+          .populate("teacher", "name employeeCode subjects department")
+          .select("teacher title description subject className section dueDate scheduleAt attachmentType attachmentUrl status submissions createdAt")
+          .sort({ createdAt: -1 })
+          .limit(20)
+          .lean(),
+        MediaAsset.find({ ownerType: "student", owner: student._id, isActive: true })
+          .select("title category secureUrl resourceType format bytes createdAt")
+          .sort({ createdAt: -1 })
+          .limit(30)
           .lean()
       ]);
 
@@ -125,9 +139,10 @@ export async function GET(request: NextRequest) {
           if (record.status === "present") acc.present += 1;
           if (record.status === "late") acc.late += 1;
           if (record.status === "absent") acc.absent += 1;
+          if (record.status === "leave") acc.leave += 1;
           return acc;
         },
-        { total: 0, present: 0, late: 0, absent: 0 }
+        { total: 0, present: 0, late: 0, absent: 0, leave: 0 }
       );
 
       const attendancePercent = attendanceSummary.total
@@ -135,6 +150,32 @@ export async function GET(request: NextRequest) {
         : 0;
 
       const totalDue = (fees as any[]).reduce((sum, fee) => sum + Math.max(0, fee.amount - fee.paidAmount), 0);
+      const totalBilled = (fees as any[]).reduce((sum, fee) => sum + Number(fee.amount || 0), 0);
+      const totalPaid = (fees as any[]).reduce((sum, fee) => sum + Number(fee.paidAmount || 0), 0);
+      const homeworkItems = (homeworkDocs as any[]).map((homework) => {
+        const submission = (homework.submissions || []).find((item: any) => String(item.student) === String(student._id));
+        const teacherData = homework.teacher as { name?: string; employeeCode?: string; subjects?: string[]; department?: string } | null;
+        return {
+          id: String(homework._id),
+          title: homework.title,
+          description: homework.description,
+          subject: homework.subject,
+          classLabel: `${homework.className}-${homework.section}`,
+          teacherName: teacherData?.name || "Teacher",
+          teacherDepartment: teacherData?.department || "",
+          dueDate: homework.dueDate,
+          scheduleAt: homework.scheduleAt,
+          attachmentType: homework.attachmentType,
+          attachmentUrl: homework.attachmentUrl || "",
+          status: homework.status,
+          submissionStatus: submission?.status || "pending",
+          submittedAt: submission?.submittedAt || null,
+          marks: submission?.marks ?? null,
+          feedback: submission?.feedback || ""
+        };
+      });
+      const homeworkCompleted = homeworkItems.filter((item) => item.submissionStatus === "submitted" || item.submissionStatus === "reviewed").length;
+      const homeworkCompletion = homeworkItems.length ? Math.round((homeworkCompleted / homeworkItems.length) * 100) : 0;
 
       return NextResponse.json({
         role,
@@ -144,9 +185,10 @@ export async function GET(request: NextRequest) {
           { label: "Attendance", value: `${attendancePercent}%`, trend: `${attendanceSummary.total} records` },
           { label: "Pending Fee", value: `Rs ${totalDue}`, trend: totalDue > 0 ? "Action required" : "All clear" },
           { label: "Upcoming Exams", value: String((exams as any[]).length), trend: `${student.className}-${student.section}` },
+          { label: "Homework", value: String(homeworkItems.length), trend: `${homeworkCompletion}% completed` },
           { label: "Recent Notices", value: String(notices.length), trend: "Student + all audience" }
         ],
-        modules: ["My Attendance", "My Fee Status", "Exam Calendar", "School Notices"],
+        modules: ["ID Card", "My Homework", "Attendance History", "Fee Ledger", "Exam Calendar", "Performance"],
         profile: {
           label: "Student Profile",
           items: [
@@ -156,7 +198,86 @@ export async function GET(request: NextRequest) {
             { key: "Guardian", value: student.guardian?.name || "N/A" }
           ]
         },
-        notices: notices.map(formatNotice)
+        notices: notices.map(formatNotice),
+        studentWorkspace: {
+          student: {
+            id: String(student._id),
+            admissionNo: student.admissionNo,
+            name: student.name,
+            gender: student.gender,
+            dob: student.dob,
+            className: student.className,
+            section: student.section,
+            rollNo: student.rollNo || "",
+            phone: student.phone || "",
+            address: student.address || "",
+            profileImageUrl: student.profileImageUrl || "",
+            guardian: student.guardian || {},
+            status: student.status
+          },
+          documents: (mediaDocs as any[]).map((item) => ({
+            id: String(item._id),
+            title: item.title,
+            category: item.category,
+            url: item.secureUrl,
+            resourceType: item.resourceType,
+            format: item.format || "",
+            bytes: item.bytes || 0,
+            createdAt: item.createdAt
+          })),
+          attendance: {
+            summary: {
+              ...attendanceSummary,
+              percent: attendancePercent
+            },
+            history: (attendanceDocs as any[]).map((doc) => {
+              const record = doc.records.find((item: any) => String(item.student) === String(student._id));
+              return {
+                date: doc.date,
+                status: record?.status || "missing",
+                note: record?.note || ""
+              };
+            })
+          },
+          fees: {
+            totalBilled,
+            totalPaid,
+            totalDue,
+            items: (fees as any[]).map((fee) => ({
+              id: String(fee._id),
+              invoiceNo: fee.invoiceNo,
+              month: fee.month,
+              amount: fee.amount,
+              paidAmount: fee.paidAmount,
+              dueAmount: Math.max(0, fee.amount - fee.paidAmount),
+              dueDate: fee.dueDate,
+              paidAt: fee.paidAt,
+              status: fee.status
+            }))
+          },
+          exams: (exams as any[]).map((exam) => ({
+            id: String(exam._id),
+            title: exam.title,
+            subject: exam.subject,
+            classLabel: `${exam.className}-${exam.section || "All"}`,
+            examDate: exam.examDate,
+            maxMarks: exam.maxMarks,
+            result: (exam.results || []).find((item: any) => String(item.student) === String(student._id)) || null
+          })),
+          homework: homeworkItems,
+          performance: {
+            attendancePercent,
+            homeworkCompletion,
+            feePaidPercent: totalBilled ? Math.round((totalPaid / totalBilled) * 100) : 0,
+            upcomingExamCount: (exams as any[]).length,
+            riskLevel: attendancePercent < 75 || homeworkCompletion < 50 || totalDue > 0 ? "Needs Attention" : "On Track",
+            strengths: [
+              attendancePercent >= 85 ? "Good attendance consistency" : "Attendance needs improvement",
+              homeworkCompletion >= 80 ? "Homework submission discipline" : "Homework follow-up required",
+              totalDue <= 0 ? "Fee ledger clear" : "Fee due follow-up required"
+            ]
+          }
+        }
       });
     }
 
@@ -270,18 +391,75 @@ export async function GET(request: NextRequest) {
         ? { $or: classPairs.map((pair) => ({ className: pair.name, section: pair.section })) }
         : { _id: null };
 
-      const [studentCount, attendanceToday, exams] = await Promise.all([
-        Student.countDocuments(studentFilter),
+      const [assignedStudents, attendanceTodayDocs, classExams, classHomework] = await Promise.all([
+        Student.find(studentFilter).sort({ className: 1, section: 1, rollNo: 1, name: 1 }).lean(),
         classPairs.length
-          ? Attendance.countDocuments({
+          ? Attendance.find({
               date: { $gte: todayStart },
               $or: classPairs.map((pair) => ({ className: pair.name, section: pair.section }))
-            })
-          : 0,
+            }).lean()
+          : [],
         classPairs.length
-          ? Exam.countDocuments({ $or: classPairs.map((pair) => ({ className: pair.name, section: pair.section })) })
-          : 0
+          ? Exam.find({ $or: classPairs.map((pair) => ({ className: pair.name, section: pair.section })) })
+              .select("title subject className section examDate maxMarks")
+              .sort({ examDate: 1 })
+              .limit(12)
+              .lean()
+          : [],
+        classPairs.length
+          ? Homework.find({
+              teacher: staffProfile._id,
+              $or: classPairs.map((pair) => ({ className: pair.name, section: pair.section }))
+            })
+              .select("title description subject className section dueDate scheduleAt attachmentType attachmentUrl status submissions createdAt")
+              .sort({ createdAt: -1 })
+              .limit(20)
+              .lean()
+          : []
       ]);
+
+      const studentsByClass = new Map<string, any[]>();
+      (assignedStudents as any[]).forEach((student) => {
+        const key = `${student.className}-${student.section}`;
+        const existing = studentsByClass.get(key) || [];
+        existing.push(student);
+        studentsByClass.set(key, existing);
+      });
+
+      const todayAttendance = (attendanceTodayDocs as any[]).map((doc) => ({
+        classLabel: `${doc.className}-${doc.section}`,
+        className: doc.className,
+        section: doc.section,
+        records: (doc.records || []).map((record: any) => ({
+          student: String(record.student),
+          status: record.status,
+          note: record.note || ""
+        }))
+      }));
+
+      const teacherClasses = (classes as any[]).map((item) => {
+        const key = `${item.name}-${item.section}`;
+        return {
+          id: String(item._id),
+          name: item.name,
+          section: item.section,
+          capacity: item.capacity,
+          timetable: item.timetable || [],
+          students: (studentsByClass.get(key) || []).map((student) => ({
+            id: String(student._id),
+            admissionNo: student.admissionNo,
+            name: student.name,
+            gender: student.gender,
+            className: student.className,
+            section: student.section,
+            rollNo: student.rollNo || "",
+            phone: student.phone || "",
+            address: student.address || "",
+            guardian: student.guardian || {},
+            status: student.status
+          }))
+        };
+      });
 
       return NextResponse.json({
         role,
@@ -289,9 +467,9 @@ export async function GET(request: NextRequest) {
         intro: `Welcome ${staffProfile.name}. Data shown for your assigned classes only.`,
         stats: [
           { label: "Assigned Classes", value: String(classes.length), trend: "Teacher mapping" },
-          { label: "Students", value: String(studentCount), trend: "In your sections" },
-          { label: "Today Attendance", value: String(attendanceToday), trend: "Batches submitted" },
-          { label: "Class Exams", value: String(exams), trend: "Scheduled records" }
+          { label: "Students", value: String((assignedStudents as any[]).length), trend: "In your sections" },
+          { label: "Today Attendance", value: String((attendanceTodayDocs as any[]).length), trend: "Batches submitted" },
+          { label: "Class Exams", value: String((classExams as any[]).length), trend: "Scheduled records" }
         ],
         modules: ["Class Attendance", "Exam Marks", "Class Notices", "Assignment Planner"],
         profile: {
@@ -303,39 +481,177 @@ export async function GET(request: NextRequest) {
             { key: "Classes", value: classPairs.map((item) => `${item.name}-${item.section}`).join(", ") || "None" }
           ]
         },
-        notices: notices.map(formatNotice)
+        notices: notices.map(formatNotice),
+        teacherWorkspace: {
+          staff: {
+            id: String(staffProfile._id),
+            employeeCode: staffProfile.employeeCode,
+            name: staffProfile.name,
+            department: staffProfile.department || "",
+            subjects: staffProfile.subjects || [],
+            phone: staffProfile.phone || "",
+            email: staffProfile.email || "",
+            profileImageUrl: staffProfile.profileImageUrl || "",
+            qualification: staffProfile.qualification || "",
+            experience: staffProfile.experience || "",
+            bio: staffProfile.bio || ""
+          },
+          classes: teacherClasses,
+          todayAttendance,
+          exams: (classExams as any[]).map((exam) => ({
+            id: String(exam._id),
+            title: exam.title,
+            subject: exam.subject,
+            classLabel: `${exam.className}-${exam.section || "All"}`,
+            className: exam.className,
+            section: exam.section || "",
+            examDate: exam.examDate,
+            maxMarks: exam.maxMarks
+          })),
+          homework: (classHomework as any[]).map((homework) => ({
+            id: String(homework._id),
+            title: homework.title,
+            description: homework.description,
+            subject: homework.subject,
+            className: homework.className,
+            section: homework.section,
+            classLabel: `${homework.className}-${homework.section}`,
+            dueDate: homework.dueDate,
+            scheduleAt: homework.scheduleAt,
+            attachmentType: homework.attachmentType,
+            attachmentUrl: homework.attachmentUrl || "",
+            status: homework.status,
+            submitted: (homework.submissions || []).filter((item: any) => item.status === "submitted" || item.status === "reviewed").length,
+            pending: (homework.submissions || []).filter((item: any) => item.status === "pending").length,
+            reviewed: (homework.submissions || []).filter((item: any) => item.status === "reviewed").length,
+            total: (homework.submissions || []).length
+          }))
+        }
       });
     }
 
     if (role === "staff") {
-      const [studentCount, staffCount, pendingFeesCount, overdueFeesCount] = await Promise.all([
+      const canManageAdmissions = ["admin", "reception"].includes(user.role);
+      const canManageFees = ["admin", "accountant"].includes(user.role);
+      const [
+        studentCount,
+        staffCount,
+        pendingFeesCount,
+        overdueFeesCount,
+        newApplicationsCount,
+        verifiedApplicationsCount,
+        applications,
+        feeDeskItems,
+        recentStudents
+      ] = await Promise.all([
         Student.countDocuments({ status: "active" }),
         Staff.countDocuments({ status: "active" }),
         Fee.countDocuments({ status: { $in: ["pending", "partial"] } }),
-        Fee.countDocuments({ status: "overdue" })
+        Fee.countDocuments({ status: "overdue" }),
+        canManageAdmissions ? AdmissionApplication.countDocuments({ status: "new" }) : 0,
+        canManageAdmissions ? AdmissionApplication.countDocuments({ status: "verified" }) : 0,
+        canManageAdmissions
+          ? AdmissionApplication.find({ status: { $in: ["new", "verified"] } })
+              .populate("linkedStudent", "admissionNo name className section rollNo")
+              .sort({ createdAt: -1 })
+              .limit(30)
+              .lean()
+          : [],
+        canManageFees
+          ? Fee.find({ status: { $in: ["pending", "partial", "overdue"] } })
+              .populate("student", "admissionNo name className section guardian")
+              .sort({ dueDate: 1, createdAt: -1 })
+              .limit(40)
+              .lean()
+          : [],
+        Student.find({ status: "active" }).sort({ createdAt: -1 }).limit(10).lean()
       ]);
 
       return NextResponse.json({
         role,
         title: "Staff Operations Dashboard",
-        intro: "Office operations and follow-ups with secure role-based data visibility.",
+        intro:
+          user.role === "reception"
+            ? "Reception desk: online admission applications, document verification and student creation."
+            : user.role === "accountant"
+              ? "Accounts desk: fee invoices, payment collection and due follow-ups."
+              : "Office operations and follow-ups with secure role-based data visibility.",
         stats: [
           { label: "Students", value: String(studentCount), trend: "Managed records" },
-          { label: "Active Staff", value: String(staffCount), trend: "Operational team" },
+          { label: canManageAdmissions ? "New Applications" : "Active Staff", value: String(canManageAdmissions ? newApplicationsCount : staffCount), trend: canManageAdmissions ? "Reception queue" : "Operational team" },
           { label: "Fee Followups", value: String(pendingFeesCount), trend: "Pending + partial" },
-          { label: "Urgent Dues", value: String(overdueFeesCount), trend: "Overdue records" }
+          { label: canManageAdmissions ? "Verified Leads" : "Urgent Dues", value: String(canManageAdmissions ? verifiedApplicationsCount : overdueFeesCount), trend: canManageAdmissions ? "Ready for admission" : "Overdue records" }
         ],
-        modules: ["Admission Desk", "Document Control", "Transport Desk", "Front Office Alerts"],
+        modules: [
+          ...(canManageAdmissions ? ["Admission Desk", "Document Verification", "Student Record Creation"] : []),
+          ...(canManageFees ? ["Fee Counter", "Invoice Collection", "Due Follow-up"] : []),
+          "Front Office Alerts",
+          "Recent Student Records"
+        ],
         profile: {
           label: "Staff Access",
           items: [
             { key: "User", value: user.name },
             { key: "Role", value: user.role },
-            { key: "Scope", value: "Operational" },
+            { key: "Scope", value: canManageAdmissions ? "Admissions" : canManageFees ? "Accounts" : "Operational" },
             { key: "Status", value: "Active" }
           ]
         },
-        notices: notices.map(formatNotice)
+        notices: notices.map(formatNotice),
+        staffWorkspace: {
+          access: {
+            role: user.role,
+            canManageAdmissions,
+            canManageFees
+          },
+          admissions: (applications as any[]).map((application) => ({
+            id: String(application._id),
+            applicationNo: application.applicationNo,
+            studentName: application.studentName,
+            gender: application.gender,
+            dob: application.dob,
+            className: application.className,
+            section: application.section,
+            previousSchool: application.previousSchool || "",
+            bloodGroup: application.bloodGroup || "",
+            phone: application.phone || "",
+            address: application.address || "",
+            guardian: application.guardian || {},
+            documents: application.documents || [],
+            status: application.status,
+            notes: application.notes || "",
+            createdAt: application.createdAt,
+            linkedStudent: application.linkedStudent || null
+          })),
+          fees: (feeDeskItems as any[]).map((fee) => {
+            const student = fee.student || {};
+            return {
+              id: String(fee._id),
+              invoiceNo: fee.invoiceNo,
+              month: fee.month,
+              amount: fee.amount,
+              paidAmount: fee.paidAmount,
+              dueAmount: Math.max(0, fee.amount - fee.paidAmount),
+              dueDate: fee.dueDate,
+              status: fee.status,
+              student: {
+                id: String(student._id || ""),
+                admissionNo: student.admissionNo || "",
+                name: student.name || "Student",
+                classLabel: student.className ? `${student.className}-${student.section || "A"}` : "-",
+                guardianPhone: student.guardian?.phone || ""
+              }
+            };
+          }),
+          recentStudents: (recentStudents as any[]).map((student) => ({
+            id: String(student._id),
+            admissionNo: student.admissionNo,
+            name: student.name,
+            classLabel: `${student.className}-${student.section}`,
+            guardian: student.guardian?.name || "",
+            phone: student.phone || student.guardian?.phone || ""
+          }))
+        }
       });
     }
 
@@ -358,6 +674,7 @@ export async function GET(request: NextRequest) {
       recentFees,
       recentAdmissions,
       classStrength,
+      staffBreakdown,
       upcomingExams,
       dueFees
     ] = await Promise.all([
@@ -377,6 +694,11 @@ export async function GET(request: NextRequest) {
         { $group: { _id: { className: "$className", section: "$section" }, count: { $sum: 1 } } },
         { $sort: { count: -1 } },
         { $limit: 7 }
+      ]),
+      Staff.aggregate([
+        { $match: { status: "active" } },
+        { $group: { _id: "$role", count: { $sum: 1 } } },
+        { $sort: { count: -1 } }
       ]),
       Exam.find({ examDate: { $gte: todayStart } })
         .select("title subject className section examDate")
@@ -462,6 +784,11 @@ export async function GET(request: NextRequest) {
       count: item.count
     }));
 
+    const staffBreakdownData = (staffBreakdown as any[]).map((item) => ({
+      role: item._id || "staff",
+      count: item.count
+    }));
+
     const upcomingExamItems = (upcomingExams as any[]).map((exam) => ({
       id: String(exam._id),
       title: exam.title,
@@ -543,6 +870,7 @@ export async function GET(request: NextRequest) {
         feeTrend,
         admissionsTrend,
         classStrength: classStrengthData,
+        staffBreakdown: staffBreakdownData,
         upcomingExams: upcomingExamItems,
         feeAlerts,
         calendarEvents,

@@ -5,15 +5,25 @@ import { requireAuth, requireRoles } from "@/lib/server/auth";
 import { connectDb } from "@/lib/server/db";
 import { WebsiteContent } from "@/lib/server/models/WebsiteContent";
 import { handleApiError } from "@/lib/server/response";
-import { getWebsiteContent, normalizeWebsiteContent } from "@/lib/server/websiteContent";
+import { getWebsiteContent, normalizeDownloadDocuments, normalizeWebsiteContent } from "@/lib/server/websiteContent";
 
-const websiteContentSchema = z.object(
-  Object.fromEntries(
-    Object.keys(defaultWebsiteContent)
-      .filter((key) => key !== "updatedAt")
-      .map((key) => [key, z.string().min(1).max(1200)])
-  ) as Record<Exclude<keyof typeof defaultWebsiteContent, "updatedAt">, z.ZodString>
-);
+const websiteScalarSchema = Object.fromEntries(
+  Object.keys(defaultWebsiteContent)
+    .filter((key) => key !== "updatedAt" && key !== "downloadDocuments")
+    .map((key) => [key, z.string().min(1).max(1200)])
+) as Record<Exclude<keyof typeof defaultWebsiteContent, "updatedAt" | "downloadDocuments">, z.ZodString>;
+
+const downloadDocumentSchema = z.object({
+  slug: z.string().min(1).max(80),
+  title: z.string().min(1).max(120),
+  filename: z.string().min(1).max(140),
+  body: z.string().min(1).max(4000)
+});
+
+const websiteContentSchema = z.object({
+  ...websiteScalarSchema,
+  downloadDocuments: z.array(downloadDocumentSchema).min(1).max(20).optional()
+});
 
 export async function GET() {
   const content = await getWebsiteContent();
@@ -27,7 +37,10 @@ export async function PATCH(request: NextRequest) {
     requireRoles(user, "admin");
 
     const body = websiteContentSchema.parse(await request.json());
-    const content = normalizeWebsiteContent(body);
+    const content = {
+      ...normalizeWebsiteContent(body),
+      downloadDocuments: normalizeDownloadDocuments(body.downloadDocuments)
+    };
 
     const updated = await WebsiteContent.findOneAndUpdate(
       { siteKey: "main" },

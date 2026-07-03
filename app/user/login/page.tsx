@@ -1,12 +1,5 @@
-import PortalLoginForm from "../../components/PortalLoginForm";
+import { redirect } from "next/navigation";
 
 export default function UserLoginPage() {
-  return (
-    <PortalLoginForm
-      portal="user"
-      title="User Login"
-      subtitle="Parent portal access"
-      signupHref="/signup?role=parent"
-    />
-  );
+  redirect("/student/login");
 }

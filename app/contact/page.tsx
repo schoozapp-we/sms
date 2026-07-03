@@ -1,4 +1,5 @@
 import { Mail, MapPin, MessageCircle, Phone } from "lucide-react";
+import { ContactEnquiryForm } from "../components/ContactEnquiryForm";
 import { PublicPageShell } from "../components/PublicPageShell";
 import { PageHero } from "../components/PublicSections";
 import { schoolProfile } from "../data/schoolSite";
@@ -22,18 +23,17 @@ export default function ContactPage() {
             <span><Mail size={16} /> {schoolProfile.email}</span>
           </div>
         </div>
-        <form className="contactForm">
-          <input aria-label="Name" placeholder="Your name" />
-          <input aria-label="Phone" placeholder="Phone number" />
-          <input aria-label="Class" placeholder="Class / enquiry topic" />
-          <input aria-label="Message" placeholder="Message" />
-          <button type="button">Send Enquiry</button>
-        </form>
-        <div className="mapBox">
+        <ContactEnquiryForm defaultTopic="Admission / general enquiry" />
+        <a
+          className="mapBox"
+          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(schoolProfile.address)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           <MapPin size={24} />
-          <strong>Google Map</strong>
-          <span>Embed school location here</span>
-        </div>
+          <strong>Open Google Map</strong>
+          <span>{schoolProfile.address}</span>
+        </a>
       </section>
 
       <section className="detailCardGrid threeCol siteSection">

@@ -21,10 +21,31 @@ import {
   Trophy,
   Users
 } from "lucide-react";
-import { facilities, highlights, portals, schoolProfile } from "../data/schoolSite";
+import { facilities, highlights, portals, schoolProfile, type WebsiteDownloadDocument } from "../data/schoolSite";
 
 const statIcons = [Users, Landmark, GraduationCap, MonitorCheck];
 const facilityIcons = [MonitorCheck, Library, Computer, FlaskConical, Trophy, Bus];
+const downloadSlugMap: Record<string, string> = {
+  "Admission Form": "admission-form",
+  "TC Form": "tc-form",
+  Syllabus: "syllabus",
+  "Holiday List": "holiday-list",
+  "Time Table": "time-table",
+  "Homework PDF": "homework-pdf",
+  Prospectus: "prospectus",
+  "Fee Structure": "fee-structure"
+};
+
+const quickLinkMap: Record<string, string> = {
+  "Online Admission": "/admission#admission-form",
+  "Fee Structure": "/api/downloads/fee-structure",
+  Prospectus: "/api/downloads/prospectus",
+  "TC Form": "/api/downloads/tc-form",
+  "Holiday List": "/api/downloads/holiday-list",
+  "Time Table": "/api/downloads/time-table",
+  Syllabus: "/api/downloads/syllabus",
+  "Career / Vacancy": "/contact?topic=career"
+};
 
 export function PublicHero({
   eyebrow,
@@ -156,13 +177,18 @@ export function FacilityGrid({ detailed = false }: Readonly<{ detailed?: boolean
 export function PortalGrid() {
   return (
     <div className="portalGrid">
-      {portals.map((portal) => (
+      {portals.map((portal, index) => (
         <article className="portalMiniCard" key={portal.href}>
-          <ShieldCheck size={20} />
-          <h3>{portal.label}</h3>
-          <p>{portal.body}</p>
+          <div className="portalCardTop">
+            <span className="portalIcon"><ShieldCheck size={20} /></span>
+            <small>0{index + 1}</small>
+          </div>
           <div>
-            <Link href={portal.href}>Open Portal</Link>
+            <h3>{portal.label}</h3>
+            <p>{portal.body}</p>
+          </div>
+          <div className="portalCardActions">
+            <Link href={portal.href}>Open Portal <ArrowRight size={14} /></Link>
             <Link href={portal.signupHref}>Signup</Link>
           </div>
         </article>
@@ -171,15 +197,22 @@ export function PortalGrid() {
   );
 }
 
-export function DownloadGrid({ items }: Readonly<{ items: string[] }>) {
+export function DownloadGrid({ items }: Readonly<{ items: Array<string | WebsiteDownloadDocument> }>) {
   return (
     <div className="downloadGrid">
-      {items.map((item) => (
-        <a href="#" key={item}>
+      {items.map((item) => {
+        const title = typeof item === "string" ? item : item.title;
+        const slug =
+          typeof item === "string"
+            ? downloadSlugMap[item] || item.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")
+            : item.slug;
+        return (
+        <a href={`/api/downloads/${slug}`} key={slug}>
           <Download size={16} />
-          <span>{item}</span>
+          <span>{title}</span>
         </a>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -193,10 +226,11 @@ export function QuickLinkList({ items }: Readonly<{ items: string[] }>) {
     <div className="featureListPanel">
       <h3>Quick Links</h3>
       {items.map((item) => (
-        <div className="checkRow" key={item}>
+        <Link className="checkRow quickLinkAction" href={quickLinkMap[item] || "/contact"} key={item}>
           <ClipboardList size={16} />
           <span>{item}</span>
-        </div>
+          <ArrowRight size={14} />
+        </Link>
       ))}
     </div>
   );

@@ -19,6 +19,14 @@ const websiteContentSchema = new mongoose.Schema(
     admissionBody: { type: String, required: true },
     contactTitle: { type: String, required: true },
     contactBody: { type: String, required: true },
+    downloadDocuments: [
+      {
+        slug: { type: String, required: true },
+        title: { type: String, required: true },
+        filename: { type: String, required: true },
+        body: { type: String, required: true }
+      }
+    ],
     updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null }
   },
   { timestamps: true }

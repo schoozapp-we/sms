@@ -21,6 +21,7 @@ const studentSchema = new mongoose.Schema(
     rollNo: String,
     phone: String,
     address: String,
+    profileImageUrl: String,
     guardian: guardianSchema,
     status: { type: String, enum: ["active", "inactive", "alumni"], default: "active" }
   },

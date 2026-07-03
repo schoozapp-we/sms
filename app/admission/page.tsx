@@ -1,12 +1,16 @@
 import Link from "next/link";
 import { FileCheck2, FileText, IndianRupee, UserPlus } from "lucide-react";
+import { AdmissionApplicationForm } from "../components/AdmissionApplicationForm";
 import { PublicPageShell } from "../components/PublicPageShell";
 import { ContactCta, DownloadGrid, InfoBand, PageHero, SectionHeading } from "../components/PublicSections";
-import { admissionSteps, downloads, schoolProfile } from "../data/schoolSite";
+import { admissionSteps, schoolProfile } from "../data/schoolSite";
+import { getWebsiteContent } from "@/lib/server/websiteContent";
 
 const documents = ["Birth certificate", "Aadhaar card", "Previous report card", "Transfer certificate", "Passport size photos", "Parent ID proof"];
 
-export default function AdmissionPage() {
+export default async function AdmissionPage() {
+  const content = await getWebsiteContent();
+
   return (
     <PublicPageShell>
       <PageHero
@@ -22,10 +26,12 @@ export default function AdmissionPage() {
           <span>Submit student details online and the school office will guide the next step.</span>
         </div>
         <div className="bannerActions">
-          <Link href="/signup" className="heroPrimaryLink"><UserPlus size={16} /> Apply Now</Link>
+          <Link href="#admission-form" className="heroPrimaryLink"><UserPlus size={16} /> Apply Now</Link>
           <a href={schoolProfile.phoneHref} className="heroSecondaryLink">Call Office</a>
         </div>
       </section>
+
+      <AdmissionApplicationForm />
 
       <InfoBand>
         <SectionHeading eyebrow="Process" title="Simple admission flow for parents." />
@@ -56,7 +62,7 @@ export default function AdmissionPage() {
 
       <section className="siteSection">
         <SectionHeading eyebrow="Downloads" title="Admission forms and school documents." />
-        <DownloadGrid items={downloads} />
+        <DownloadGrid items={content.downloadDocuments} />
       </section>
 
       <section className="detailPanel">

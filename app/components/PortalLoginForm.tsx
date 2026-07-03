@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Check, KeyRound, ShieldCheck } from "lucide-react";
+import { Check, Eye, EyeOff, KeyRound, ShieldCheck } from "lucide-react";
 
 type Portal = "admin" | "teacher" | "student" | "parent" | "user" | "staff";
 
@@ -37,6 +37,7 @@ export default function PortalLoginForm({ portal, title, subtitle, signupHref }:
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -143,15 +144,26 @@ export default function PortalLoginForm({ portal, title, subtitle, signupHref }:
 
             <div className="field">
               <label htmlFor="password">Password</label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                autoComplete="current-password"
-                required
-              />
+              <div className="passwordInputWrap">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
+                  required
+                />
+                <button
+                  type="button"
+                  className="passwordToggle"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  title={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
               <Link href="/forgot-password" className="forgotLink">Forgot password?</Link>
             </div>
 
