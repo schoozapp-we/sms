@@ -31,7 +31,10 @@ export function TeacherCarousel({ teachers }: TeacherCarouselProps) {
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const dragState = useRef({ active: false, startX: 0, scrollLeft: 0 });
   const [paused, setPaused] = useState(false);
-  const carouselItems = useMemo(() => (teachers.length ? [...teachers, ...teachers] : []), [teachers]);
+  const carouselItems = useMemo(
+    () => Array.from(new Map(teachers.map((teacher) => [teacher.id, teacher])).values()),
+    [teachers]
+  );
 
   useEffect(() => {
     const scroller = scrollerRef.current;
@@ -41,8 +44,8 @@ export function TeacherCarousel({ teachers }: TeacherCarouselProps) {
     const tick = () => {
       if (!paused && !dragState.current.active) {
         scroller.scrollLeft += 0.45;
-        const resetPoint = scroller.scrollWidth / 2;
-        if (scroller.scrollLeft >= resetPoint) {
+        const resetPoint = scroller.scrollWidth - scroller.clientWidth;
+        if (resetPoint > 0 && scroller.scrollLeft >= resetPoint) {
           scroller.scrollLeft = 0;
         }
       }
@@ -103,8 +106,8 @@ export function TeacherCarousel({ teachers }: TeacherCarouselProps) {
         onPointerCancel={endDrag}
       >
         <div className="teacherCarouselTrack">
-          {carouselItems.map((teacher, index) => (
-            <article className="teacherSlideCard" key={`${teacher.id}-${index}`}>
+          {carouselItems.map((teacher) => (
+            <article className="teacherSlideCard" key={teacher.id}>
               <div className="teacherSlideTop">
                 <div className="teacherSlideImage">
                   {teacher.profileImageUrl ? (

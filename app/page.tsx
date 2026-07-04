@@ -37,6 +37,8 @@ import {
 import { getWebsiteContent } from "@/lib/server/websiteContent";
 import { getPublicGallery, getPublicTeachers } from "@/lib/server/publicMedia";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const content = await getWebsiteContent();
   const [publicGallery, publicTeachers] = await Promise.all([getPublicGallery(), getPublicTeachers()]);
