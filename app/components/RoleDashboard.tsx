@@ -30,7 +30,8 @@ import {
   Sparkles,
   Target,
   UsersRound,
-  WalletCards
+  WalletCards,
+  X
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { CSSProperties } from "react";
@@ -739,6 +740,7 @@ export default function RoleDashboard({ role }: RoleDashboardProps) {
   const [selectedDayKey, setSelectedDayKey] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [showQuickActions, setShowQuickActions] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<DashboardTab>("overview");
   const [websiteDraft, setWebsiteDraft] = useState<WebsiteContent>(defaultWebsiteContent);
   const [websiteStatus, setWebsiteStatus] = useState("");
@@ -951,6 +953,11 @@ export default function RoleDashboard({ role }: RoleDashboardProps) {
     localStorage.removeItem("user");
     router.push("/");
     router.refresh();
+  };
+
+  const selectDashboardTab = (tab: DashboardTab) => {
+    setActiveTab(tab);
+    setMobileSidebarOpen(false);
   };
 
   const onApprovalAction = async (userId: string, action: "approve" | "reject") => {
@@ -1904,13 +1911,22 @@ export default function RoleDashboard({ role }: RoleDashboardProps) {
 
   return (
     <main className="shell shellDense">
-      <aside className="sidebar">
+      <button
+        className={`mobileSidebarBackdrop ${mobileSidebarOpen ? "show" : ""}`}
+        type="button"
+        aria-label="Close dashboard menu"
+        onClick={() => setMobileSidebarOpen(false)}
+      />
+      <aside className={`sidebar ${mobileSidebarOpen ? "mobileOpen" : ""}`}>
         <div className="brand">
           <div className="brandMark"><ShieldCheck size={22} /></div>
           <div>
             <strong>EduSphere</strong>
             <span>{role.toUpperCase()} PORTAL</span>
           </div>
+          <button className="sidebarClose" type="button" aria-label="Close menu" onClick={() => setMobileSidebarOpen(false)}>
+            <X size={18} />
+          </button>
         </div>
 
         <nav>
@@ -1920,7 +1936,7 @@ export default function RoleDashboard({ role }: RoleDashboardProps) {
             <button
               key={item.key}
               className={activeTab === item.key ? "active" : ""}
-              onClick={() => setActiveTab(item.key)}
+              onClick={() => selectDashboardTab(item.key)}
               type="button"
             >
               <Icon size={18} />
@@ -1937,7 +1953,7 @@ export default function RoleDashboard({ role }: RoleDashboardProps) {
 
       <section className="workspace workspaceDense">
         <header className="topbar">
-          <button className="iconOnly" aria-label="Open menu" onClick={() => setShowQuickActions((prev) => !prev)}>
+          <button className="iconOnly dashboardMenuButton" aria-label="Open menu" onClick={() => setMobileSidebarOpen(true)}>
             <Menu size={20} />
           </button>
           <div className="search">
@@ -1948,7 +1964,7 @@ export default function RoleDashboard({ role }: RoleDashboardProps) {
               onChange={(event) => setSearchTerm(event.target.value)}
             />
           </div>
-          <button className="iconOnly" aria-label="Notifications" onClick={() => setActiveTab("notices")}>
+          <button className="iconOnly" aria-label="Notifications" onClick={() => selectDashboardTab("notices")}>
             <Bell size={20} />
           </button>
         </header>

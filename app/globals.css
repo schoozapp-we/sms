@@ -239,6 +239,14 @@ button[disabled],
   padding: 24px 18px;
 }
 
+.mobileSidebarBackdrop {
+  display: none;
+}
+
+.sidebarClose {
+  display: none;
+}
+
 .brand {
   display: flex;
   align-items: center;
@@ -313,13 +321,18 @@ nav button.active {
   top: 0;
   z-index: 20;
   display: grid;
-  grid-template-columns: auto minmax(220px, 680px) auto;
+  grid-template-columns: minmax(260px, 680px) auto;
   align-items: center;
   gap: 12px;
-  padding: 0 0 12px;
-  margin-bottom: 18px;
+  justify-content: end;
+  padding: 10px 0;
+  margin-bottom: 24px;
   background: rgba(244, 247, 251, 0.92);
   backdrop-filter: blur(12px);
+}
+
+.iconOnly.dashboardMenuButton {
+  display: none;
 }
 
 .iconOnly {
@@ -659,12 +672,75 @@ nav button.active {
   }
 
   .sidebar {
-    display: none;
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 60;
+    display: block;
+    width: min(310px, calc(100vw - 54px));
+    max-width: 100%;
+    transform: translateX(-105%);
+    box-shadow: 24px 0 58px rgba(12, 24, 38, 0.24);
+    transition: transform 220ms var(--ease-out);
+  }
+
+  .sidebar.mobileOpen {
+    transform: translateX(0);
+  }
+
+  .mobileSidebarBackdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    display: block;
+    border: 0;
+    padding: 0;
+    background: rgba(11, 24, 39, 0.42);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .mobileSidebarBackdrop.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .sidebar .brand {
+    align-items: center;
+  }
+
+  .sidebar .brand > div:nth-child(2) {
+    min-width: 0;
+  }
+
+  .sidebarClose {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    margin-left: auto;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 8px;
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .sidebarClose:hover {
+    border-color: rgba(255, 255, 255, 0.34);
+    background: rgba(255, 255, 255, 0.16);
   }
 
   .workspace {
     height: auto;
     overflow: visible;
+  }
+
+  .topbar {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    justify-content: stretch;
+  }
+
+  .iconOnly.dashboardMenuButton {
+    display: grid;
   }
 
   .statsGrid,
@@ -4833,6 +4909,83 @@ nav button.active {
   gap: 8px;
 }
 
+.portalMobileMenu {
+  position: relative;
+  display: none;
+}
+
+.portalMobileMenu summary {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid #d8e4ee;
+  border-radius: 8px;
+  color: #123d67;
+  background: #ffffff;
+  cursor: pointer;
+  list-style: none;
+}
+
+.portalMobileMenu summary::-webkit-details-marker {
+  display: none;
+}
+
+.portalMobileMenu summary:hover {
+  color: #ffffff;
+  border-color: #123d67;
+  background: #123d67;
+  box-shadow: var(--shadow-soft);
+}
+
+.portalMobileMenuPanel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  display: grid;
+  gap: 10px;
+  width: min(320px, calc(100vw - 28px));
+  border: 1px solid #d8e4ee;
+  border-radius: 8px;
+  padding: 10px;
+  background: #ffffff;
+  box-shadow: 0 18px 40px rgba(23, 44, 66, 0.16);
+}
+
+.portalMobileMenuPanel nav,
+.portalMobilePortalLinks {
+  display: grid;
+  gap: 4px;
+}
+
+.portalMobileMenuPanel a {
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+  border-radius: 8px;
+  padding: 0 12px;
+  color: #243951;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.portalMobileMenuPanel a:hover {
+  color: #0f3f69;
+  background: #edf5fb;
+}
+
+.portalMobilePortalLinks {
+  border-top: 1px solid #e5edf4;
+  padding-top: 8px;
+}
+
+.portalMobileCallLink {
+  justify-content: center;
+  gap: 7px;
+  color: #123d67 !important;
+  background: #e9f2f9;
+}
+
 .portalCallLink,
 .portalMenu summary {
   display: inline-flex;
@@ -5263,6 +5416,10 @@ nav button.active {
     display: none;
   }
 
+  .portalMobileMenu {
+    display: block;
+  }
+
   .timelineGrid,
   .detailCardGrid.fourCol {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -5277,6 +5434,21 @@ nav button.active {
 
   .portalHeaderActions {
     display: none;
+  }
+
+  .portalBrand {
+    min-width: 0;
+  }
+
+  .portalBrand div {
+    min-width: 0;
+  }
+
+  .portalBrand strong,
+  .portalBrand small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .publicHero {

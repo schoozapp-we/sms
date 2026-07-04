@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronDown, Phone, Shield } from "lucide-react";
+import { ChevronDown, Menu, Phone, Shield } from "lucide-react";
 import { portals } from "../data/schoolSite";
 import { getWebsiteContent } from "@/lib/server/websiteContent";
 
@@ -54,6 +54,32 @@ export async function PublicHeader() {
           </div>
         </details>
       </div>
+
+      <details className="portalMobileMenu">
+        <summary aria-label="Open navigation menu">
+          <Menu size={22} />
+        </summary>
+        <div className="portalMobileMenuPanel">
+          <nav aria-label="Mobile navigation">
+            {navItems.map((item) => (
+              <Link key={item.href} href={item.href}>
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+          <div className="portalMobilePortalLinks">
+            <Link href="/portal-login">Portal Login</Link>
+            {portals.map((portal) => (
+              <Link key={portal.href} href={portal.href}>
+                {portal.label}
+              </Link>
+            ))}
+          </div>
+          <a href={phoneHref} className="portalMobileCallLink">
+            <Phone size={15} /> {content.phone}
+          </a>
+        </div>
+      </details>
     </header>
   );
 }

@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "seed:atlas": "node --env-file=.env.local scripts/seed-atlas.mjs",
     "lint": "eslint ."
   },
   "dependencies": {
